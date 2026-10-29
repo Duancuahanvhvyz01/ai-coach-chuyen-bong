@@ -18,112 +18,113 @@ MODEL_URL = (
     "pose_landmarker_lite.task"
 )
 
+
 def get_model():
     if not MODEL.exists() or MODEL.stat().st_size < 1_000_000:
         urllib.request.urlretrieve(MODEL_URL, str(MODEL))
 
+
 def analyze(path):
     get_model()
 
+    cap = cv2.VideoCapture(path)
+    if not cap.isOpened():
+        raise ValueError("Không mở được video. Hãy thử video MP4 khác.")
 
-cap = cv2.VideoCapture(path)
-if not cap.isOpened():
-    raise ValueError("Không mở được video. Hãy thử video MP4 khác.")
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    if not fps or fps < 1:
+        fps = 30
 
-fps = cap.get(cv2.CAP_PROP_FPS)
-if not fps or fps < 1:
-    fps = 30
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    options = vision.PoseLandmarkerOptions(
+        base_options=python.BaseOptions(
+            model_asset_path=str(MODEL)
+        ),
+        running_mode=vision.RunningMode.VIDEO,
+        num_poses=1
+    )
 
-options = vision.PoseLandmarkerOptions(
-    base_options=python.BaseOptions(
-        model_asset_path=str(MODEL)
-    ),
-    running_mode=vision.RunningMode.VIDEO,
-    num_poses=1
-)
+    output = tempfile.NamedTemporaryFile(
+        delete=False, suffix=".mp4"
+    ).name
 
-output = tempfile.NamedTemporaryFile(
-    delete=False, suffix=".mp4"
-).name
+    writer = cv2.VideoWriter(
+        output,
+        cv2.VideoWriter_fourcc(*"mp4v"),
+        fps / 2,
+        (width, height)
+    )
 
-writer = cv2.VideoWriter(
-    output,
-    cv2.VideoWriter_fourcc(*"mp4v"),
-    fps / 2,
-    (width, height)
-)
+    if not writer.isOpened():
+        cap.release()
+        raise RuntimeError("Không tạo được video đầu ra.")
 
-if not writer.isOpened():
-    cap.release()
-    raise RuntimeError("Không tạo được video đầu ra.")
+    total = 0
+    detected = 0
+    preview = None
 
-total = 0
-detected = 0
-preview = None
+    try:
+        with vision.PoseLandmarker.create_from_options(
+            options
+        ) as landmarker:
+            frame_no = 0
 
-try:
-    with vision.PoseLandmarker.create_from_options(
-        options
-    ) as landmarker:
-        frame_no = 0
+            while True:
+                ok, frame = cap.read()
+                if not ok:
+                    break
 
-        while True:
-            ok, frame = cap.read()
-            if not ok:
-                break
+                if frame_no % 2 == 0:
+                    total += 1
 
-            if frame_no % 2 == 0:
-                total += 1
-
-                rgb = cv2.cvtColor(
-                    frame, cv2.COLOR_BGR2RGB
-                )
-                image = mp.Image(
-                    image_format=mp.ImageFormat.SRGB,
-                    data=rgb
-                )
-
-                timestamp = int(frame_no * 1000 / fps)
-                result = landmarker.detect_for_video(
-                    image, timestamp
-                )
-
-                if result.pose_landmarks:
-                    detected += 1
-                    points = result.pose_landmarks[0]
-
-                    for p in points:
-                        if p.visibility > 0.5:
-                            x = int(p.x * width)
-                            y = int(p.y * height)
-                            cv2.circle(
-                                frame, (x, y), 4,
-                                (0, 255, 0), -1
-                            )
-
-                    cv2.putText(
-                        frame, "BODY DETECTED",
-                        (20, 35),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.8, (0, 255, 0), 2
+                    rgb = cv2.cvtColor(
+                        frame, cv2.COLOR_BGR2RGB
+                    )
+                    image = mp.Image(
+                        image_format=mp.ImageFormat.SRGB,
+                        data=rgb
                     )
 
-                writer.write(frame)
-                preview = cv2.cvtColor(
-                    frame, cv2.COLOR_BGR2RGB
-                )
+                    timestamp = int(frame_no * 1000 / fps)
+                    result = landmarker.detect_for_video(
+                        image, timestamp
+                    )
 
-            frame_no += 1
+                    if result.pose_landmarks:
+                        detected += 1
+                        points = result.pose_landmarks[0]
 
-finally:
-    cap.release()
-    writer.release()
+                        for p in points:
+                            if p.visibility > 0.5:
+                                x = int(p.x * width)
+                                y = int(p.y * height)
+                                cv2.circle(
+                                    frame, (x, y), 4,
+                                    (0, 255, 0), -1
+                                )
+
+                        cv2.putText(
+                            frame, "BODY DETECTED",
+                            (20, 35),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            0.8, (0, 255, 0), 2
+                        )
+
+                    writer.write(frame)
+                    preview = cv2.cvtColor(
+                        frame, cv2.COLOR_BGR2RGB
+                    )
+
+                frame_no += 1
+
+    finally:
+        cap.release()
+        writer.release()
 
     if total == 0:
-            raise ValueError("Video không có khung hình đọc được.")
+        raise ValueError("Video không có khung hình đọc được.")
 
     return output, preview, total, detected
 
@@ -150,15 +151,11 @@ if video:
                 temp = f.name
 
             with st.spinner("Đang phân tích..."):
-                result_file, preview, total, detected = (
-                    analyze(temp)
-                )
+                result_file, preview, total, detected = analyze(temp)
 
             st.success("Đã xử lý xong!")
             st.write("Số khung hình:", total)
-            st.write(
-                "Khung hình nhận diện được cơ thể:", detected
-            )
+            st.write("Khung hình nhận diện được cơ thể:", detected)
 
             if preview is not None:
                 st.image(
