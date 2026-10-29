@@ -47,8 +47,7 @@ def analyze(path):
     output = tempfile.NamedTemporaryFile(
         delete=False, suffix=".mp4"
     ).name
-
-    ```
+    
 writer = cv2.VideoWriter(
     output,
     cv2.VideoWriter_fourcc(*"mp4v"),
