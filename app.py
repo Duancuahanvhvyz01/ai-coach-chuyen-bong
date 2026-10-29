@@ -48,7 +48,19 @@ def analyze(path):
         delete=False, suffix=".mp4"
     ).name
 
-    writer = cv2.VideoWriter(
+    ```
+writer = cv2.VideoWriter(
+    output,
+    cv2.VideoWriter_fourcc(*"mp4v"),
+    fps / 2,
+    (width, height)
+)
+
+if not writer.isOpened():
+    cap.release()
+    raise RuntimeError("Không tạo được video đầu ra.")
+```
+
         output,
         cv2.VideoWriter_fourcc(*"avc1"),
         fps / 2,
