@@ -122,10 +122,10 @@ finally:
     cap.release()
     writer.release()
 
-if total == 0:
-    raise ValueError("Video không có khung hình đọc được.")
+    if total == 0:
+            raise ValueError("Video không có khung hình đọc được.")
 
-return output, preview, total, detected
+    return output, preview, total, detected
 
 
 video = st.file_uploader(
