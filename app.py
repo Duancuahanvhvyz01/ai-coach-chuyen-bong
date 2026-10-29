@@ -58,13 +58,9 @@ writer = cv2.VideoWriter(
 if not writer.isOpened():
     cap.release()
     raise RuntimeError("Không tạo được video đầu ra.")
-```
 
-        output,
-        cv2.VideoWriter_fourcc(*"avc1"),
-        fps / 2,
-        (width, height)
-    )
+        
+
 
     total = 0
     detected = 0
