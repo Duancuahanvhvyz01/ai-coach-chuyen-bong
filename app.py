@@ -23,31 +23,32 @@ def get_model():
         urllib.request.urlretrieve(MODEL_URL, str(MODEL))
 
 def analyze(path):
-    get_model()
+get_model()
 
-    cap = cv2.VideoCapture(path)
-    if not cap.isOpened():
-        raise ValueError("Không mở được video. Hãy thử video MP4 khác.")
 
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    if not fps or fps < 1:
-        fps = 30
+cap = cv2.VideoCapture(path)
+if not cap.isOpened():
+    raise ValueError("Không mở được video. Hãy thử video MP4 khác.")
 
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+fps = cap.get(cv2.CAP_PROP_FPS)
+if not fps or fps < 1:
+    fps = 30
 
-    options = vision.PoseLandmarkerOptions(
-        base_options=python.BaseOptions(
-            model_asset_path=str(MODEL)
-        ),
-        running_mode=vision.RunningMode.VIDEO,
-        num_poses=1
-    )
+width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    output = tempfile.NamedTemporaryFile(
-        delete=False, suffix=".mp4"
-    ).name
-    
+options = vision.PoseLandmarkerOptions(
+    base_options=python.BaseOptions(
+        model_asset_path=str(MODEL)
+    ),
+    running_mode=vision.RunningMode.VIDEO,
+    num_poses=1
+)
+
+output = tempfile.NamedTemporaryFile(
+    delete=False, suffix=".mp4"
+).name
+
 writer = cv2.VideoWriter(
     output,
     cv2.VideoWriter_fourcc(*"mp4v"),
@@ -59,73 +60,73 @@ if not writer.isOpened():
     cap.release()
     raise RuntimeError("Không tạo được video đầu ra.")
 
-        
+total = 0
+detected = 0
+preview = None
 
+try:
+    with vision.PoseLandmarker.create_from_options(
+        options
+    ) as landmarker:
+        frame_no = 0
 
-    total = 0
-    detected = 0
-    preview = None
+        while True:
+            ok, frame = cap.read()
+            if not ok:
+                break
 
-    try:
-        with vision.PoseLandmarker.create_from_options(
-            options
-        ) as landmarker:
-            frame_no = 0
+            if frame_no % 2 == 0:
+                total += 1
 
-            while True:
-                ok, frame = cap.read()
-                if not ok:
-                    break
+                rgb = cv2.cvtColor(
+                    frame, cv2.COLOR_BGR2RGB
+                )
+                image = mp.Image(
+                    image_format=mp.ImageFormat.SRGB,
+                    data=rgb
+                )
 
-                if frame_no % 2 == 0:
-                    total += 1
-                    rgb = cv2.cvtColor(
-                        frame, cv2.COLOR_BGR2RGB
-                    )
-                    image = mp.Image(
-                        image_format=mp.ImageFormat.SRGB,
-                        data=rgb
-                    )
+                timestamp = int(frame_no * 1000 / fps)
+                result = landmarker.detect_for_video(
+                    image, timestamp
+                )
 
-                    timestamp = int(frame_no * 1000 / fps)
-                    result = landmarker.detect_for_video(
-                        image, timestamp
-                    )
+                if result.pose_landmarks:
+                    detected += 1
+                    points = result.pose_landmarks[0]
 
-                    if result.pose_landmarks:
-                        detected += 1
-                        points = result.pose_landmarks[0]
+                    for p in points:
+                        if p.visibility > 0.5:
+                            x = int(p.x * width)
+                            y = int(p.y * height)
+                            cv2.circle(
+                                frame, (x, y), 4,
+                                (0, 255, 0), -1
+                            )
 
-                        for p in points:
-                            if p.visibility > 0.5:
-                                x = int(p.x * width)
-                                y = int(p.y * height)
-                                cv2.circle(
-                                    frame, (x, y), 4,
-                                    (0, 255, 0), -1
-                                )
-
-                        cv2.putText(
-                            frame, "BODY DETECTED",
-                            (20, 35),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            0.8, (0, 255, 0), 2
-                        )
-
-                    writer.write(frame)
-                    preview = cv2.cvtColor(
-                        frame, cv2.COLOR_BGR2RGB
+                    cv2.putText(
+                        frame, "BODY DETECTED",
+                        (20, 35),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.8, (0, 255, 0), 2
                     )
 
-                frame_no += 1
-    finally:
-        cap.release()
-        writer.release()
+                writer.write(frame)
+                preview = cv2.cvtColor(
+                    frame, cv2.COLOR_BGR2RGB
+                )
 
-    if total == 0:
-        raise ValueError("Video không có khung hình đọc được.")
+            frame_no += 1
 
-        return output, preview, total, detected
+finally:
+    cap.release()
+    writer.release()
+
+if total == 0:
+    raise ValueError("Video không có khung hình đọc được.")
+
+return output, preview, total, detected
+
 
 video = st.file_uploader(
     "Chọn video",
