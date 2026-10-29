@@ -23,7 +23,7 @@ def get_model():
         urllib.request.urlretrieve(MODEL_URL, str(MODEL))
 
 def analyze(path):
-get_model()
+    get_model()
 
 
 cap = cv2.VideoCapture(path)
