@@ -50,7 +50,7 @@ def analyze(path):
 
     writer = cv2.VideoWriter(
         output,
-        cv2.VideoWriter_fourcc(*"mp4v"),
+        cv2.VideoWriter_fourcc(*"avc1"),
         fps / 2,
         (width, height)
     )
