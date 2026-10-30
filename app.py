@@ -162,7 +162,8 @@ if video:
                     preview,
                     caption="Khung hình phân tích cuối cùng"
                 )
-
+            st.subheader("🎥 Video phân tích")
+            st.video(result_file)
             with open(result_file, "rb") as f:
                 st.download_button(
                     "Tải video kết quả",
