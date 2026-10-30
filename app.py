@@ -124,10 +124,43 @@ def analyze(path):
         cap.release()
         writer.release()
 
+    finally:
+        cap.release()
+        writer.release()
+
     if total == 0:
         raise ValueError("Video không có khung hình đọc được.")
 
-    return output, preview, total, detected
+    h264_output = tempfile.NamedTemporaryFile(
+        delete=False, suffix=".mp4"
+    ).name
+
+    try:
+        subprocess.run(
+            [
+                "ffmpeg", "-y",
+                "-i", output,
+                "-c:v", "libx264",
+                "-pix_fmt", "yuv420p",
+                "-movflags", "+faststart",
+                "-an",
+                h264_output
+            ],
+            check=True,
+            capture_output=True,
+            text=True
+        )
+
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(
+            "Không chuyển mã được video: " + e.stderr[-1000:]
+        )
+
+    finally:
+        if os.path.exists(output):
+            os.remove(output)
+
+    return h264_output, preview, total, detected
 
 
 video = st.file_uploader(
