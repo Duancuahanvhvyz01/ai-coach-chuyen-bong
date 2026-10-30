@@ -136,10 +136,14 @@ def analyze(path):
             [
                 "ffmpeg", "-y",
                 "-i", output,
+                "-i", path,
+                "-map", "0:v:0",
+                "-map", "1:a:0?",
                 "-c:v", "libx264",
                 "-pix_fmt", "yuv420p",
+                "-c:a", "aac",
+                "-shortest",
                 "-movflags", "+faststart",
-                
                 h264_output
             ],
             check=True,
