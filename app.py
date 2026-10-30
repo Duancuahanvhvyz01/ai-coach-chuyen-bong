@@ -124,10 +124,6 @@ def analyze(path):
         cap.release()
         writer.release()
 
-    finally:
-        cap.release()
-        writer.release()
-
     if total == 0:
         raise ValueError("Video không có khung hình đọc được.")
 
