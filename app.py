@@ -94,18 +94,25 @@ def analyze(path):
                     )
 
                     if result.pose_landmarks:
-                        detected += 1
-                        points = result.pose_landmarks[0]
+                        detected += len(result.pose_landmarks)
 
-                        for p in points:
-                            if p.visibility > 0.5:
-                                x = int(p.x * width)
-                                y = int(p.y * height)
-                                cv2.circle(
-                                    frame, (x, y), 4,
-                                    (0, 255, 0), -1
-                                )
+                        for person_no, points in enumerate(result.pose_landmarks):
+                            for p in points:
+                                if p.visibility > 0.5:
+                                    x = int(p.x * width)
+                                    y = int(p.y * height)
 
+                                    cv2.circle(
+                                        frame, (x, y), 4,
+                                        (0, 255, 0), -1
+                                    )
+
+                        cv2.putText(
+                            frame, f"PEOPLE: {len(result.pose_landmarks)}",
+                            (20, 35),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            0.8, (0, 255, 0), 2
+    )
                         cv2.putText(
                             frame, "BODY DETECTED",
                             (20, 35),
