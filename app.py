@@ -113,12 +113,7 @@ def analyze(path):
                             cv2.FONT_HERSHEY_SIMPLEX,
                             0.8, (0, 255, 0), 2
     )
-                        cv2.putText(
-                            frame, "BODY DETECTED",
-                            (20, 35),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            0.8, (0, 255, 0), 2
-                        )                  
+                          
 
                     writer.write(frame)
                     preview = cv2.cvtColor(
