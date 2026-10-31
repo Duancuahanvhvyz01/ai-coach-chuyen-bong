@@ -44,7 +44,7 @@ def analyze(path):
             model_asset_path=str(MODEL)
         ),
         running_mode=vision.RunningMode.VIDEO,
-        num_poses=1
+        num_poses=5
     )
 
     output = tempfile.NamedTemporaryFile(
