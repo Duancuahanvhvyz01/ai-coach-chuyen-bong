@@ -118,7 +118,7 @@ def analyze(path):
                             (20, 35),
                             cv2.FONT_HERSHEY_SIMPLEX,
                             0.8, (0, 255, 0), 2
-                        )
+                        )                  
 
                     writer.write(frame)
                     preview = cv2.cvtColor(
