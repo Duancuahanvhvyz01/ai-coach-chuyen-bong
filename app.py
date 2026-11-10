@@ -65,9 +65,7 @@ def analyze(path):
     total = 0
     detected = 0
     preview = None
-    # Bộ nhớ theo dõi người chơi
-    tracks = {}
-    next_id = 1
+
     try:
         with vision.PoseLandmarker.create_from_options(
             options
