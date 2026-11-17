@@ -65,7 +65,11 @@ def analyze(path):
     total = 0
     detected = 0
     preview = None
-
+    # Bộ nhớ theo dõi người chơi
+    tracks = {}
+    next_id = 1
+    frame_count = 0
+    max_missing = 15
     try:
         with vision.PoseLandmarker.create_from_options(
             options
@@ -93,27 +97,138 @@ def analyze(path):
                         image, timestamp
                     )
 
+                    frame_count += 1
+
+                    # Cập nhật thời gian vắng mặt của các ID
+                    for track in tracks.values():
+                        track["missing"] += 1
+
+                    # Xóa ID đã biến mất quá lâu
+                    tracks = {
+                        track_id: track
+                        for track_id, track in tracks.items()
+                        if track["missing"] <= max_missing
+                    }
+
+                    people = []
+
                     if result.pose_landmarks:
                         detected += len(result.pose_landmarks)
 
-                        for person_no, points in enumerate(result.pose_landmarks):
-                            for p in points:
-                                if p.visibility > 0.5:
-                                    x = int(p.x * width)
-                                    y = int(p.y * height)
+                        for points in result.pose_landmarks:
+                            # Ưu tiên lấy vị trí hai hông
+                            center_points = [
+                                points[i] for i in (23, 24)
+                                if points[i].visibility > 0.5
+                            ]
 
-                                    cv2.circle(
-                                        frame, (x, y), 4,
-                                        (0, 255, 0), -1
-                                    )
+                            # Nếu không thấy hông, lấy hai vai
+                            if not center_points:
+                                center_points = [
+                                    points[i] for i in (11, 12)
+                                    if points[i].visibility > 0.5
+                                ]
 
-                        cv2.putText(
-                            frame, f"PEOPLE: {len(result.pose_landmarks)}",
-                            (20, 35),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            0.8, (0, 255, 0), 2
-    )
-                          
+                            # Nếu vẫn không có, lấy các điểm nhìn thấy
+                            if not center_points:
+                                center_points = [
+                                    p for p in points
+                                    if p.visibility > 0.5
+                                ]
+
+                            if center_points:
+                                center_x = sum(
+                                    p.x for p in center_points
+                                ) / len(center_points)
+
+                                center_y = sum(
+                                    p.y for p in center_points
+                                ) / len(center_points)
+
+                                center = (center_x, center_y)
+                            else:
+                                center = None
+
+                            people.append({
+                                "points": points,
+                                "center": center
+                            })
+
+                    # Tìm những cặp người và ID gần nhau nhất
+                    pairs = []
+
+                    for person_idx, person in enumerate(people):
+                        if person["center"] is None:
+                            continue
+
+                        for track_id, track in tracks.items():
+                            dx = person["center"][0] - track["center"][0]
+                            dy = person["center"][1] - track["center"][1]
+                            distance = (dx ** 2 + dy ** 2) ** 0.5
+
+                            if distance < 0.20:
+                                pairs.append(
+                                    (distance, person_idx, track_id)
+                                )
+
+                    pairs.sort()
+
+                    assigned = {}
+                    used_tracks = set()
+
+                    for distance, person_idx, track_id in pairs:
+                        if person_idx not in assigned and track_id not in used_tracks:
+                            assigned[person_idx] = track_id
+                            used_tracks.add(track_id)
+
+                            tracks[track_id]["center"] = people[person_idx]["center"]
+                            tracks[track_id]["missing"] = 0
+
+                    # Cấp ID mới cho người chưa được ghép
+                    for person_idx, person in enumerate(people):
+                        if person["center"] is not None and person_idx not in assigned:
+                            track_id = next_id
+                            next_id += 1
+
+                            assigned[person_idx] = track_id
+                            tracks[track_id] = {
+                                "center": person["center"],
+                                "missing": 0
+                            }
+
+                    # Vẽ các điểm cơ thể và ID
+                    for person_idx, person in enumerate(people):
+                        points = person["points"]
+
+                        for p in points:
+                            if p.visibility > 0.5:
+                                x = int(p.x * width)
+                                y = int(p.y * height)
+
+                                cv2.circle(
+                                    frame, (x, y), 4,
+                                    (0, 255, 0), -1
+                                )
+
+                        if person_idx in assigned:
+                            track_id = assigned[person_idx]
+
+                            center_x = int(person["center"][0] * width)
+                            center_y = int(person["center"][1] * height)
+
+                            cv2.putText(
+                                frame, f"ID: {track_id}",
+                                (center_x, center_y - 15),
+                                cv2.FONT_HERSHEY_SIMPLEX,
+                                0.8, (0, 255, 255), 2
+                            )
+
+                    cv2.putText(
+                        frame, f"PEOPLE: {len(result.pose_landmarks)}",
+                        (20, 35),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.8, (0, 255, 0), 2
+                    )
 
                     writer.write(frame)
                     preview = cv2.cvtColor(
