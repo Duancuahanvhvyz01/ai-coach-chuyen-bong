@@ -232,14 +232,8 @@ def analyze(path):
                             assigned[person_idx] = track_id
                             used_tracks.add(track_id)
 
-                            old_center = tracks[track_id]["center"]
-                            new_center = people[person_idx]["center"]
-
-                            smooth = 0.35
-
                             tracks[track_id]["center"] = (
-                                old_center[0] * (1 - smooth) + new_center[0] * smooth,
-                                old_center[1] * (1 - smooth) + new_center[1] * smooth
+                                people[person_idx]["center"]
                             )
                             tracks[track_id]["bbox"] = (
                                 people[person_idx]["bbox"]
