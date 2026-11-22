@@ -69,7 +69,7 @@ def analyze(path):
     tracks = {}
     next_id = 1
     frame_count = 0
-    max_missing = 15
+    max_missing = 30
     try:
         with vision.PoseLandmarker.create_from_options(
             options
@@ -166,7 +166,7 @@ def analyze(path):
                             dy = person["center"][1] - track["center"][1]
                             distance = (dx ** 2 + dy ** 2) ** 0.5
 
-                            if distance < 0.20:
+                            if distance < 0.25:
                                 pairs.append(
                                     (distance, person_idx, track_id)
                                 )
