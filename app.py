@@ -154,45 +154,106 @@ def analyze(path):
                                 "center": center
                             })
 
-                    # Tìm những cặp người và ID gần nhau nhất
+                    # Theo dõi tối đa 5 người bằng vị trí và kích thước cơ thể
                     pairs = []
 
+                    # Tính khung bao cơ thể của từng người
+                    for person_idx, person in enumerate(people):
+                        visible = [
+                            p for p in person["points"]
+                            if p.visibility > 0.5
+                        ]
+
+                        if visible:
+                            xs = [p.x for p in visible]
+                            ys = [p.y for p in visible]
+
+                            person["bbox"] = (
+                                min(xs), min(ys),
+                                max(xs), max(ys)
+                            )
+                        else:
+                            person["bbox"] = None
+
+                    # So sánh người mới với ID đã có
                     for person_idx, person in enumerate(people):
                         if person["center"] is None:
                             continue
 
                         for track_id, track in tracks.items():
-                            dx = person["center"][0] - track["center"][0]
-                            dy = person["center"][1] - track["center"][1]
+                            dx = (
+                                person["center"][0]
+                                - track["center"][0]
+                            )
+                            dy = (
+                                person["center"][1]
+                                - track["center"][1]
+                            )
+
                             distance = (dx ** 2 + dy ** 2) ** 0.5
 
-                            if distance < 0.25:
-                                pairs.append(
-                                    (distance, person_idx, track_id)
+                            size_difference = 0
+
+                            if (
+                                person["bbox"] is not None
+                                and track.get("bbox") is not None
+                            ):
+                                old = track["bbox"]
+                                new = person["bbox"]
+
+                                old_w = old[2] - old[0]
+                                old_h = old[3] - old[1]
+                                new_w = new[2] - new[0]
+                                new_h = new[3] - new[1]
+
+                                size_difference = (
+                                    abs(old_w - new_w)
+                                    + abs(old_h - new_h)
                                 )
 
+                            score = distance + 0.2 * size_difference
+
+                            if score < 0.30:
+                                pairs.append(
+                                    (score, person_idx, track_id)
+                                )
+
+                    # Ghép những cặp phù hợp nhất
                     pairs.sort()
 
                     assigned = {}
                     used_tracks = set()
 
-                    for distance, person_idx, track_id in pairs:
-                        if person_idx not in assigned and track_id not in used_tracks:
+                    for score, person_idx, track_id in pairs:
+                        if (
+                            person_idx not in assigned
+                            and track_id not in used_tracks
+                        ):
                             assigned[person_idx] = track_id
                             used_tracks.add(track_id)
 
-                            tracks[track_id]["center"] = people[person_idx]["center"]
+                            tracks[track_id]["center"] = (
+                                people[person_idx]["center"]
+                            )
+                            tracks[track_id]["bbox"] = (
+                                people[person_idx]["bbox"]
+                            )
                             tracks[track_id]["missing"] = 0
 
-                    # Cấp ID mới cho người chưa được ghép
+                    # Cấp ID cho người chưa được ghép
                     for person_idx, person in enumerate(people):
-                        if person["center"] is not None and person_idx not in assigned:
+                        if (
+                            person["center"] is not None
+                            and person_idx not in assigned
+                        ):
                             track_id = next_id
                             next_id += 1
 
                             assigned[person_idx] = track_id
+
                             tracks[track_id] = {
                                 "center": person["center"],
+                                "bbox": person["bbox"],
                                 "missing": 0
                             }
 
