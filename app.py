@@ -262,8 +262,7 @@ def analyze(path):
                                     + abs(old_h - new_h)
                                 )
 
-                            score = distance + 0.2 * size_difference
-
+                            score = distance
                             if score < 0.40:
                                 pairs.append(
                                     (score, person_idx, track_id)
