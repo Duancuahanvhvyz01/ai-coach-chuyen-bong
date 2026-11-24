@@ -72,7 +72,7 @@ def analyze(path):
     tracks = {}
     next_id = 1
     frame_count = 0
-    max_missing = 120
+    max_missing = 150
     try:
         with vision.PoseLandmarker.create_from_options(
             options
