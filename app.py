@@ -71,6 +71,7 @@ def analyze(path):
     # Bộ nhớ theo dõi người chơi
     tracks = {}
     next_id = 1
+    seen_ids = set()
     frame_count = 0
     max_missing = 120
     try:
@@ -308,7 +309,8 @@ def analyze(path):
                                 "bbox": person["bbox"],
                                 "missing": 0
                             }
-
+                    # Lưu lại các ID đã xuất hiện
+                    seen_ids.update(assigned.values())
                     # Vẽ các điểm cơ thể và ID
                     for person_idx, person in enumerate(people):
                         points = person["points"]
@@ -404,8 +406,7 @@ def analyze(path):
         if os.path.exists(output):
             os.remove(output)
 
-    return h264_output, preview, total, detected
-
+    return h264_output, preview, total, detected, sorted(seen_ids)
 
 # ==============================
 # GIAO DIỆN AI COACH
@@ -462,8 +463,7 @@ if video:
                 temp = f.name
 
             with st.spinner("Đang nhận diện và phân tích video..."):
-                result_file, preview, total, detected = analyze(temp)
-
+                result_file, preview, total, detected, player_ids = analyze(temp)
             st.success("Đã xử lý video thành công!")
 
             # Thông tin tổng quan
@@ -502,11 +502,19 @@ if video:
             st.divider()
             st.header("👥 Kết quả theo từng người")
 
-            st.info(
-                "Khu vực hiển thị kết quả riêng cho từng ID "
-                "sẽ được phát triển ở giai đoạn tiếp theo."
-            )
+            if player_ids:
+                st.write(f"Tổng số người chơi đã nhận diện: {len(player_ids)}")
 
+                cols = st.columns(len(player_ids))
+
+                for col, track_id in zip(cols, player_ids):
+                    with col:
+                        st.metric(
+                            f"Người chơi ID {track_id}",
+                            "Đã nhận diện"
+                        )
+            else:
+                st.warning("Chưa nhận diện được người chơi nào.")
             # Khu vực đánh giá kỹ thuật
             st.header("📝 Đánh giá kỹ thuật")
 
