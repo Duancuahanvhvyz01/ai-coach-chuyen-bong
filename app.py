@@ -274,9 +274,23 @@ def analyze(path):
                         if person_idx in assigned:
                             track_id = assigned[person_idx]
 
-                            center_x = int(person["center"][0] * width)
-                            center_y = int(person["center"][1] * height)
+                            track = tracks[track_id]
 
+                            if "display_center" not in track:
+                                track["display_center"] = person["center"]
+
+                            smooth = 0.35
+
+                            old_x, old_y = track["display_center"]
+                            new_x, new_y = person["center"]
+
+                            track["display_center"] = (
+                                old_x * (1 - smooth) + new_x * smooth,
+                                old_y * (1 - smooth) + new_y * smooth
+                            )
+
+                            center_x = int(track["display_center"][0] * width)
+                            center_y = int(track["display_center"][1] * height)
                             cv2.putText(
                                 frame, f"ID: {track_id}",
                                 (center_x, center_y - 15),
