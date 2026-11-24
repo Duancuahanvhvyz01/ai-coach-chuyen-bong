@@ -44,7 +44,10 @@ def analyze(path):
             model_asset_path=str(MODEL)
         ),
         running_mode=vision.RunningMode.VIDEO,
-        num_poses=5
+        num_poses=5,
+        min_pose_detection_confidence=0.6,
+        min_pose_presence_confidence=0.6,
+        min_tracking_confidence=0.6
     )
 
     output = tempfile.NamedTemporaryFile(
