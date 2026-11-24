@@ -258,17 +258,18 @@ def analyze(path):
                                 new_h = new[3] - new[1]
 
                                 size_difference = (
-                                    abs(old_w - new_w)
-                                    + abs(old_h - new_h)
+                                    abs(old_w - new_w) / max(old_w, new_w, 1)
+                                    + abs(old_h - new_h) / max(old_h, new_h, 1)
                                 )
 
-                            score = distance
+                            score = distance + 0.10 * size_difference
+
                             if score < 0.40 or (
                                 track["missing"] > 0 and score < 0.60
-                            ):                                pairs.append(
+                            ):
+                                pairs.append(
                                     (score, person_idx, track_id)
                                 )
-
                     # Ghép những cặp phù hợp nhất
                     pairs.sort()
 
