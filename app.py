@@ -110,7 +110,7 @@ def analyze(path):
                     tracks = {
                         track_id: track
                         for track_id, track in tracks.items()
-                        if track["missing"] <= max_missingF
+                        if track["missing"] <= max_missing
                     }
 
                     people = []
