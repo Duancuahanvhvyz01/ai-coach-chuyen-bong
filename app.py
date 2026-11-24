@@ -114,10 +114,10 @@ def analyze(path):
                     }
 
                     people = []
+                    duplicate_count = 0
 
                     if result.pose_landmarks:
                         detected += len(result.pose_landmarks)
-
                         for points in result.pose_landmarks:
                             # Ưu tiên lấy vị trí hai hông
                             center_points = [
@@ -167,7 +167,6 @@ def analyze(path):
                                 )
 
                                 duplicate = False
-
                                 for old_person in people:
                                     old = old_person["bbox"]
 
@@ -197,13 +196,14 @@ def analyze(path):
                                         duplicate = True
                                         break
 
-                                if not duplicate:
+                                if duplicate:
+                                    duplicate_count += 1
+                                else:
                                     people.append({
                                         "points": points,
                                         "center": center,
                                         "bbox": bbox
                                     })
-
                     # Theo dõi tối đa 5 người bằng vị trí và kích thước cơ thể
                     pairs = []
 
