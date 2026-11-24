@@ -110,7 +110,7 @@ def analyze(path):
                     tracks = {
                         track_id: track
                         for track_id, track in tracks.items()
-                        if track["missing"] <= max_missing
+                        if track["missing"] <= max_missingF
                     }
 
                     people = []
@@ -263,8 +263,9 @@ def analyze(path):
                                 )
 
                             score = distance
-                            if score < 0.40:
-                                pairs.append(
+                            if score < 0.40 or (
+                                track["missing"] > 0 and score < 0.60
+                            ):                                pairs.append(
                                     (score, person_idx, track_id)
                                 )
 
