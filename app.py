@@ -10,7 +10,7 @@ from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
 st.set_page_config(page_title="AI Coach", page_icon="🏐")
-st.title("🏐 AI Coach – Trợ lý kỹ thuật chuyền bóng")
+st.title("🏐 AI Coach - Hỗ trợ học sinh lớp 10 rèn luyện kỹ thuật chuyền bóng tại trường THPT Đoàn Văn Tố")
 
 MODEL = Path(__file__).parent / "pose_landmarker_lite.task"
 MODEL_URL = (
@@ -412,15 +412,13 @@ def analyze(path):
 # GIAO DIỆN AI COACH
 # ==============================
 
-st.subheader("    Hỗ trợ học sinh lớp 10 rèn luyện kỹ thuật chuyền bóng
-    cao tay và thấp tay tại Trường THPT Đoàn Văn Tố.
-")
+st.subheader("Hệ thống nhận diện và phân tích kỹ thuật bóng chuyền")
 
 
 st.markdown(
     """
     Phân tích chuyển động, nhận diện người chơi và hỗ trợ
-    đánh giá kỹ thuật chuyền bóng bằng trí tuệ nhân tạo.
+    đánh giá kỹ thuật chuyền bóng thấp tay và cao tay bằng trí tuệ nhân tạo.
     """
 )
 
