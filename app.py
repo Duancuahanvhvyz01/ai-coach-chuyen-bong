@@ -44,7 +44,7 @@ def analyze(path):
             model_asset_path=str(MODEL)
         ),
         running_mode=vision.RunningMode.VIDEO,
-        num_poses=1,
+        num_poses=2,
         min_pose_detection_confidence=0.6,
         min_pose_presence_confidence=0.6,
         min_tracking_confidence=0.6
@@ -152,10 +152,57 @@ def analyze(path):
                             else:
                                 center = None
 
-                            people.append({
-                                "points": points,
-                                "center": center
-                            })
+                            if center is not None:
+                                visible = [
+                                    p for p in points
+                                    if p.visibility > 0.5
+                                ]
+
+                                xs = [p.x for p in visible]
+                                ys = [p.y for p in visible]
+
+                                bbox = (
+                                    min(xs), min(ys),
+                                    max(xs), max(ys)
+                                )
+
+                                duplicate = False
+
+                                for old_person in people:
+                                    old = old_person["bbox"]
+
+                                    x1 = max(bbox[0], old[0])
+                                    y1 = max(bbox[1], old[1])
+                                    x2 = min(bbox[2], old[2])
+                                    y2 = min(bbox[3], old[3])
+
+                                    intersection = (
+                                        max(0, x2 - x1)
+                                        * max(0, y2 - y1)
+                                    )
+
+                                    area1 = (
+                                        (bbox[2] - bbox[0])
+                                        * (bbox[3] - bbox[1])
+                                    )
+
+                                    area2 = (
+                                        (old[2] - old[0])
+                                        * (old[3] - old[1])
+                                    )
+
+                                    union = area1 + area2 - intersection
+
+                                    if union > 0 and intersection / union > 0.7:
+                                        duplicate = True
+                                        break
+
+                                if not duplicate:
+                                    people.append({
+                                        "points": points,
+                                        "center": center,
+                                        "bbox": bbox
+                                    })
 
                     # Theo dõi tối đa 5 người bằng vị trí và kích thước cơ thể
                     pairs = []
