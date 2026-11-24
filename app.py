@@ -349,7 +349,7 @@ def analyze(path):
                             )
 
                     cv2.putText(
-                        frame, f"PEOPLE: {len(result.pose_landmarks)}",
+                        frame, f"PEOPLE: {len(people)}",
                         (20, 35),
                         cv2.FONT_HERSHEY_SIMPLEX,
                         0.8, (0, 255, 0), 2
