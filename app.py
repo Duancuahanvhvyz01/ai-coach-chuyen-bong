@@ -10,7 +10,7 @@ from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
 st.set_page_config(page_title="AI Coach", page_icon="🏐")
-st.title("🏐 AI Coach chuyền bóng thấp tay")
+st.title("🏐 AI Coach – Hỗ trợ học sinh lớp 10 rèn luyện kỹ thuật chuyền bóng cao tay và thấp tay tại Trường THPT Đoàn Văn Tố")
 
 MODEL = Path(__file__).parent / "pose_landmarker_lite.task"
 MODEL_URL = (
