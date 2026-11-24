@@ -407,15 +407,49 @@ def analyze(path):
     return h264_output, preview, total, detected
 
 
+# ==============================
+# GIAO DIỆN AI COACH
+# ==============================
+
+st.title("🏐 AI COACH")
+st.subheader("Hệ thống nhận diện và phân tích kỹ thuật bóng chuyền")
+
+st.markdown(
+    """
+    Phân tích chuyển động, nhận diện người chơi và hỗ trợ
+    đánh giá kỹ thuật chuyền bóng bằng trí tuệ nhân tạo.
+    """
+)
+
+st.divider()
+
+# Lựa chọn chế độ phân tích
+st.header("⚙️ Thiết lập phân tích")
+
+mode = st.radio(
+    "Chọn kỹ thuật cần phân tích:",
+    [
+        "Chuyền bóng thấp tay",
+        "Chuyền bóng cao tay",
+        "Phân tích cả hai kỹ thuật"
+    ],
+    horizontal=True
+)
+
+st.divider()
+
+# Khu vực tải video
+st.header("🎥 Video đầu vào")
+
 video = st.file_uploader(
-    "Chọn video",
+    "Tải video cần phân tích lên",
     type=["mp4", "mov", "avi", "m4v"]
 )
 
 if video:
     st.video(video)
 
-    if st.button("Phân tích video"):
+    if st.button("🚀 Bắt đầu phân tích", use_container_width=True):
         temp = None
         result_file = None
 
@@ -428,38 +462,65 @@ if video:
                 f.write(video.getbuffer())
                 temp = f.name
 
-            with st.spinner("Đang phân tích..."):
+            with st.spinner("Đang nhận diện và phân tích video..."):
                 result_file, preview, total, detected = analyze(temp)
 
-            st.success("Đã xử lý xong!")
-            st.write("Số khung hình:", total)
-            st.write("Khung hình nhận diện được cơ thể:", detected)
+            st.success("Đã xử lý video thành công!")
 
+            # Thông tin tổng quan
+            st.header("📊 Kết quả tổng quan")
+
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.metric("Tổng số khung hình", total)
+
+            with col2:
+                st.metric("Khung hình nhận diện được", detected)
+
+            # Hình ảnh phân tích
             if preview is not None:
+                st.subheader("🖼️ Hình ảnh nhận diện")
                 st.image(
                     preview,
                     caption="Khung hình phân tích cuối cùng"
                 )
-            st.subheader("🎥 Video phân tích")
+
+            # Video kết quả
+            st.subheader("🎬 Video sau phân tích")
             st.video(result_file)
+
             with open(result_file, "rb") as f:
                 st.download_button(
-                    "Tải video kết quả",
+                    "⬇️ Tải video kết quả",
                     f.read(),
                     file_name="ket_qua.mp4",
-                    mime="video/mp4"
+                    mime="video/mp4",
+                    use_container_width=True
                 )
+
+            # Khu vực kết quả từng người
+            st.divider()
+            st.header("👥 Kết quả theo từng người")
+
+            st.info(
+                "Khu vực hiển thị kết quả riêng cho từng ID "
+                "sẽ được phát triển ở giai đoạn tiếp theo."
+            )
+
+            # Khu vực đánh giá kỹ thuật
+            st.header("📝 Đánh giá kỹ thuật")
+
+            st.info(
+                "Các chỉ số và tiêu chuẩn đánh giá sẽ được "
+                "bổ sung sau khi có dữ liệu từ giáo viên."
+            )
 
             if detected == 0:
                 st.warning(
                     "Không nhận diện được cơ thể. "
                     "Hãy kiểm tra ánh sáng và góc quay."
                 )
-
-            st.info(
-                "Bản này mới nhận diện tư thế cơ thể, "
-                "chưa chấm đúng/sai kỹ thuật chuyền bóng."
-            )
 
         except Exception as e:
             st.error("Phân tích thất bại:")
