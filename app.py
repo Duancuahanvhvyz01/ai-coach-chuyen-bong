@@ -192,10 +192,11 @@ def analyze(path):
 
                                     union = area1 + area2 - intersection
 
-                                    if union > 0 and intersection / union > 0.5:
+                                    min_area = min(area1, area2)
+
+                                    if min_area > 0 and intersection / min_area > 0.7:
                                         duplicate = True
                                         break
-
                                 if duplicate:
                                     duplicate_count += 1
                                 else:
