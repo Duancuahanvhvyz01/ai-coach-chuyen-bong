@@ -192,7 +192,7 @@ def analyze(path):
 
                                     union = area1 + area2 - intersection
 
-                                    if union > 0 and intersection / union > 0.7:
+                                    if union > 0 and intersection / union > 0.5:
                                         duplicate = True
                                         break
 
