@@ -411,7 +411,6 @@ def analyze(path):
 # GIAO DIỆN AI COACH
 # ==============================
 
-st.title("🏐 AI COACH")
 st.subheader("Hệ thống nhận diện và phân tích kỹ thuật bóng chuyền")
 
 st.markdown(
