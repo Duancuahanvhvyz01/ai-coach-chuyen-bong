@@ -312,6 +312,29 @@ def analyze(path):
                             }
                     # Lưu lại các ID đã xuất hiện
                     seen_ids.update(assigned.values())
+                                        # Thu thập dữ liệu khung xương theo từng ID
+                    for person_idx, person in enumerate(people):
+                        if person_idx not in assigned:
+                            continue
+
+                        track_id = assigned[person_idx]
+
+                        landmarks = []
+
+                        for point in person["points"]:
+                            landmarks.append({
+                                "x": float(point.x),
+                                "y": float(point.y),
+                                "z": float(point.z),
+                                "visibility": float(point.visibility)
+                            })
+
+                        pose_data.append({
+                            "frame": int(frame_no),
+                            "timestamp": round(frame_no / fps, 3),
+                            "id": int(track_id),
+                            "landmarks": landmarks
+                        })
                     # Vẽ các điểm cơ thể và ID
                     for person_idx, person in enumerate(people):
                         points = person["points"]
