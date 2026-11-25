@@ -9,7 +9,7 @@ import urllib.request
 from pathlib import Path
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
-
+from PIL import Image, ImageDraw, ImageFont
 st.set_page_config(page_title="AI Coach", page_icon="🏐")
 st.title("🏐 AI Coach - Hỗ trợ học sinh lớp 10 rèn luyện kỹ thuật chuyền bóng tại trường THPT Đoàn Văn Tố")
 
