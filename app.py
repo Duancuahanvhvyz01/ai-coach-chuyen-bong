@@ -72,6 +72,7 @@ def analyze(path):
     tracks = {}
     next_id = 1
     seen_ids = set()
+    pose_data = []
     frame_count = 0
     max_missing = 120
     try:
