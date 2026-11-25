@@ -24,7 +24,98 @@ MODEL_URL = (
 def get_model():
     if not MODEL.exists() or MODEL.stat().st_size < 1_000_000:
         urllib.request.urlretrieve(MODEL_URL, str(MODEL))
+# ==============================
+# NHẬN DIỆN HƯỚNG CƠ THỂ
+# ==============================
 
+def detect_body_direction(points):
+    # Lấy độ rõ của hai vai và hai hông
+    left_shoulder = points[11]
+    right_shoulder = points[12]
+    left_hip = points[23]
+    right_hip = points[24]
+    # Kiểm tra độ rõ của các điểm
+    if min(
+        left_shoulder.visibility,
+        right_shoulder.visibility,
+        left_hip.visibility,
+        right_hip.visibility
+    ) < 0.5:
+        return "Không xác định"
+
+    # Tính khoảng cách giữa hai vai
+    shoulder_width = abs(
+        left_shoulder.x - right_shoulder.x
+    )
+
+    # Tính khoảng cách giữa hai hông
+    hip_width = abs(
+        left_hip.x - right_hip.x
+    )
+
+    # Tính chiều dài thân người
+    shoulder_y = (
+        left_shoulder.y + right_shoulder.y
+    ) / 2
+
+    hip_y = (
+        left_hip.y + right_hip.y
+    ) / 2
+
+    torso_length = abs(hip_y - shoulder_y)
+
+    if torso_length < 0.01:
+        return "Không xác định"
+
+    ratio = shoulder_width / torso_length
+
+    if ratio >= 0.65:
+        return "Gần chính diện"
+    elif ratio <= 0.35:
+        return "Gần nghiêng ngang"
+    else:
+        return "Góc chéo"
+    # Kiểm tra độ rõ của các điểm
+    if min(
+        left_shoulder.visibility,
+        right_shoulder.visibility,
+        left_hip.visibility,
+        right_hip.visibility
+    ) < 0.5:
+        return "Không xác định"
+
+    # Tính khoảng cách giữa hai vai
+    shoulder_width = abs(
+        left_shoulder.x - right_shoulder.x
+    )
+
+    # Tính khoảng cách giữa hai hông
+    hip_width = abs(
+        left_hip.x - right_hip.x
+    )
+
+    # Tính chiều dài thân người
+    shoulder_y = (
+        left_shoulder.y + right_shoulder.y
+    ) / 2
+
+    hip_y = (
+        left_hip.y + right_hip.y
+    ) / 2
+
+    torso_length = abs(hip_y - shoulder_y)
+
+    if torso_length < 0.01:
+        return "Không xác định"
+
+    ratio = shoulder_width / torso_length
+
+    if ratio >= 0.65:
+        return "Gần chính diện"
+    elif ratio <= 0.35:
+        return "Gần nghiêng ngang"
+    else:
+        return "Góc chéo"
 
 def analyze(path):
     get_model()
@@ -334,6 +425,7 @@ def analyze(path):
                             "frame": int(frame_no),
                             "timestamp": round(frame_no / fps, 3),
                             "id": int(track_id),
+                            "direction": detect_body_direction(person["points"]),
                             "landmarks": landmarks
                         })
                     # Vẽ các điểm cơ thể và ID
@@ -370,13 +462,15 @@ def analyze(path):
 
                             center_x = int(track["display_center"][0] * width)
                             center_y = int(track["display_center"][1] * height)
+                            direction = detect_body_direction(points)
+
                             cv2.putText(
-                                frame, f"ID: {track_id}",
+                                frame,
+                                f"ID: {track_id} | {direction}",
                                 (center_x, center_y - 15),
                                 cv2.FONT_HERSHEY_SIMPLEX,
-                                0.8, (0, 255, 255), 2
+                                0.6, (0, 255, 255), 2
                             )
-
                     cv2.putText(
                         frame, f"PEOPLE: {len(people)}",
                         (20, 35),
