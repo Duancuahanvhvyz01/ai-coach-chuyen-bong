@@ -463,7 +463,7 @@ def analyze(path):
                             center_x = int(track["display_center"][0] * width)
                             center_y = int(track["display_center"][1] * height)
                             direction = detect_body_direction(points)
-
+                            print("HUONG CO THE:", track_id, direction)
                             cv2.putText(
                                 frame,
                                 f"ID: {track_id} | {direction}",
