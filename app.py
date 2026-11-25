@@ -1,6 +1,7 @@
 import streamlit as st
 import cv2
 import mediapipe as mp
+import json
 import tempfile
 import os
 import subprocess
@@ -430,7 +431,7 @@ def analyze(path):
         if os.path.exists(output):
             os.remove(output)
 
-    return h264_output, preview, total, detected, sorted(seen_ids)
+    return h264_output, preview, total, detected, sorted(seen_ids), pose_data
 
 # ==============================
 # GIAO DIỆN AI COACH
@@ -510,9 +511,21 @@ if video:
             )
 
             with st.spinner("Đang nhận diện và phân tích video..."):
-                result_file, preview, total, detected, player_ids = analyze(normalized)
+                result_file, preview, total, detected, player_ids, pose_data = analyze(normalized)
             st.success("Đã xử lý video thành công!")
+            # Lưu dữ liệu khung xương
+            json_data = json.dumps(
+                pose_data,
+                ensure_ascii=False,
+                indent=2
+            )
 
+            st.download_button(
+                "📥 Tải dữ liệu khung xương (JSON)",
+                data=json_data,
+                file_name="du_lieu_khung_xuong.json",
+                mime="application/json"
+            )
             # Thông tin tổng quan
             st.header("📊 Kết quả tổng quan")
 
