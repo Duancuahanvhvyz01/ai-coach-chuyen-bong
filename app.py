@@ -452,8 +452,8 @@ if video:
 
     if st.button("🚀 Bắt đầu phân tích", use_container_width=True):
         temp = None
+        normalized = None
         result_file = None
-
         try:
             suffix = Path(video.name).suffix or ".mp4"
 
@@ -463,8 +463,30 @@ if video:
                 f.write(video.getbuffer())
                 temp = f.name
 
+                    # Chuẩn hóa chiều video bằng FFmpeg
+            normalized = tempfile.NamedTemporaryFile(
+                delete=False, suffix=".mp4"
+            ).name
+
+            subprocess.run(
+                [
+                    "ffmpeg", "-y",
+                    "-i", temp,
+                    "-map", "0:v:0",
+                    "-map", "0:a?",
+                    "-c:v", "libx264",
+                    "-pix_fmt", "yuv420p",
+                    "-c:a", "aac",
+                    "-movflags", "+faststart",
+                    normalized
+                ],
+                check=True,
+                capture_output=True,
+                text=True
+            )
+
             with st.spinner("Đang nhận diện và phân tích video..."):
-                result_file, preview, total, detected, player_ids = analyze(temp)
+                result_file, preview, total, detected, player_ids = analyze(normalized)
             st.success("Đã xử lý video thành công!")
 
             # Thông tin tổng quan
@@ -535,5 +557,6 @@ if video:
             st.code(str(e))
 
         finally:
-            if temp and os.path.exists(temp):
-                os.remove(temp)
+            for file_path in (temp, normalized):
+                if file_path and os.path.exists(file_path):
+                    os.remove(file_path)
