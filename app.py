@@ -1,5 +1,6 @@
 import streamlit as st
 import cv2
+import numpy as np
 import mediapipe as mp
 import json
 import tempfile
@@ -75,47 +76,7 @@ def detect_body_direction(points):
         return "Gần nghiêng ngang"
     else:
         return "Góc chéo"
-    # Kiểm tra độ rõ của các điểm
-    if min(
-        left_shoulder.visibility,
-        right_shoulder.visibility,
-        left_hip.visibility,
-        right_hip.visibility
-    ) < 0.5:
-        return "Không xác định"
 
-    # Tính khoảng cách giữa hai vai
-    shoulder_width = abs(
-        left_shoulder.x - right_shoulder.x
-    )
-
-    # Tính khoảng cách giữa hai hông
-    hip_width = abs(
-        left_hip.x - right_hip.x
-    )
-
-    # Tính chiều dài thân người
-    shoulder_y = (
-        left_shoulder.y + right_shoulder.y
-    ) / 2
-
-    hip_y = (
-        left_hip.y + right_hip.y
-    ) / 2
-
-    torso_length = abs(hip_y - shoulder_y)
-
-    if torso_length < 0.01:
-        return "Không xác định"
-
-    ratio = shoulder_width / torso_length
-
-    if ratio >= 0.65:
-        return "Gần chính diện"
-    elif ratio <= 0.35:
-        return "Gần nghiêng ngang"
-    else:
-        return "Góc chéo"
 
 def analyze(path):
     get_model()
@@ -130,7 +91,10 @@ def analyze(path):
 
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
+    font = ImageFont.truetype(
+        str(Path(__file__).parent / "DejaVuSans.ttf"),
+        22
+    )
     options = vision.PoseLandmarkerOptions(
         base_options=python.BaseOptions(
             model_asset_path=str(MODEL)
@@ -404,7 +368,7 @@ def analyze(path):
                             }
                     # Lưu lại các ID đã xuất hiện
                     seen_ids.update(assigned.values())
-                                        # Thu thập dữ liệu khung xương theo từng ID
+                    # Thu thập dữ liệu khung xương theo từng ID
                     for person_idx, person in enumerate(people):
                         if person_idx not in assigned:
                             continue
@@ -429,6 +393,8 @@ def analyze(path):
                             "landmarks": landmarks
                         })
                     # Vẽ các điểm cơ thể và ID
+                    labels = []
+
                     for person_idx, person in enumerate(people):
                         points = person["points"]
 
@@ -444,7 +410,6 @@ def analyze(path):
 
                         if person_idx in assigned:
                             track_id = assigned[person_idx]
-
                             track = tracks[track_id]
 
                             if "display_center" not in track:
@@ -462,15 +427,35 @@ def analyze(path):
 
                             center_x = int(track["display_center"][0] * width)
                             center_y = int(track["display_center"][1] * height)
+
                             direction = detect_body_direction(points)
+
                             print("HUONG CO THE:", track_id, direction)
-                            cv2.putText(
-                                frame,
-                                f"ID: {track_id} | {direction}",
-                                (center_x, center_y - 15),
-                                cv2.FONT_HERSHEY_SIMPLEX,
-                                0.6, (0, 255, 255), 2
+
+                            labels.append(
+                                (center_x, center_y, track_id, direction)
                             )
+
+                    # Chuyển ảnh sang Pillow để viết chữ tiếng Việt
+                    frame_pil = Image.fromarray(
+                        cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    )
+                    draw = ImageDraw.Draw(frame_pil)
+
+                    for center_x, center_y, track_id, direction in labels:
+                        draw.text(
+                            (center_x, center_y - 30),
+                            f"ID: {track_id} | {direction}",
+                            font=font,
+                            fill=(255, 255, 0)
+                        )
+
+                    # Chuyển ảnh trở lại OpenCV
+                    frame = cv2.cvtColor(
+                        np.array(frame_pil),
+                        cv2.COLOR_RGB2BGR
+                    )
+
                     cv2.putText(
                         frame, f"PEOPLE: {len(people)}",
                         (20, 35),
@@ -479,10 +464,10 @@ def analyze(path):
                     )
 
                     writer.write(frame)
+
                     preview = cv2.cvtColor(
                         frame, cv2.COLOR_BGR2RGB
                     )
-
                 frame_no += 1
 
     finally:
@@ -582,7 +567,7 @@ if video:
                 f.write(video.getbuffer())
                 temp = f.name
 
-                    # Chuẩn hóa chiều video bằng FFmpeg
+            # Chuẩn hóa chiều video bằng FFmpeg
             normalized = tempfile.NamedTemporaryFile(
                 delete=False, suffix=".mp4"
             ).name
