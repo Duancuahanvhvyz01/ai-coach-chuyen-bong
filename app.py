@@ -130,7 +130,7 @@ def analyze(path):
     seen_ids = set()
     pose_data = []
     frame_count = 0
-    max_missing = 120
+    max_missing = 240
     try:
         with vision.PoseLandmarker.create_from_options(
             options
