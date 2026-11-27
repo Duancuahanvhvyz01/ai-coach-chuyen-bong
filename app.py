@@ -44,7 +44,6 @@ def detect_body_direction(points, width, height):
     ) < 0.5:
         return "Không xác định"
 
-    # Tính khoảng cách theo pixel thực tế
     shoulder_width = abs(
         left_shoulder.x - right_shoulder.x
     ) * width
@@ -68,10 +67,12 @@ def detect_body_direction(points, width, height):
 
     if ratio >= 0.65:
         return "Gần chính diện"
-    elif ratio <= 0.35:
+    elif ratio >= 0.35:
+        return "Góc chéo"
+    elif ratio >= 0.20:
         return "Gần nghiêng ngang"
     else:
-        return "Góc chéo"
+        return "Nghiêng ngang"
 # ==============================
 # PHÂN TÍCH TƯ THẾ CHUẨN BỊ
 # TIÊU CHÍ 1 CỦA GIÁO VIÊN
@@ -284,7 +285,7 @@ def analyze(path):
 
                     if result.pose_landmarks:
                         detected += len(result.pose_landmarks)
-                        for points in result.pose_landmarks:
+                        for pose_idx, points in enumerate(result.pose_landmarks):
                             # Ưu tiên lấy vị trí hai hông
                             center_points = [
                                 points[i] for i in (23, 24)
@@ -368,6 +369,7 @@ def analyze(path):
                                 else:
                                     people.append({
                                         "points": points,
+                                        "world_points": result.pose_world_landmarks[pose_idx],
                                         "center": center,
                                         "bbox": bbox
                                     })
@@ -492,7 +494,15 @@ def analyze(path):
                                 "z": float(point.z),
                                 "visibility": float(point.visibility)
                             })
+                        world_landmarks = []
 
+                        for point in person["world_points"]:
+                            world_landmarks.append({
+                                "x": float(point.x),
+                                "y": float(point.y),
+                                "z": float(point.z),
+                                "visibility": float(point.visibility)
+                            })
                         # Phân tích tư thế chuẩn bị theo từng ID
                         ready_posture = analyze_ready_posture(
                             person["points"], width, height
@@ -505,7 +515,8 @@ def analyze(path):
                                 person["points"], width, height
                             ),
                             "ready_posture": ready_posture,
-                            "landmarks": landmarks
+                            "landmarks": landmarks,
+                            "world_landmarks": world_landmarks
                         })                 
                         # Vẽ các điểm cơ thể và ID
                     labels = []
