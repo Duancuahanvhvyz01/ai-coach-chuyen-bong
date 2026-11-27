@@ -493,11 +493,10 @@ def analyze(path):
                                 "visibility": float(point.visibility)
                             })
 
-                         # Phân tích tư thế chuẩn bị theo từng ID
-                         ready_posture = analyze_ready_posture(
+                        # Phân tích tư thế chuẩn bị theo từng ID
+                        ready_posture = analyze_ready_posture(
                             person["points"], width, height
                         )
-
                         pose_data.append({
                             "frame": int(frame_no),
                             "timestamp": round(frame_no / fps, 3),
