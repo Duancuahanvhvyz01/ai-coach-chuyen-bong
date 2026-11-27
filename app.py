@@ -679,6 +679,13 @@ if video is not None:
         video.getvalue()
     ).hexdigest()
 
+    if (
+        st.session_state.last_video_hash is not None
+        and current_video_hash != st.session_state.last_video_hash
+    ):
+        st.session_state.analysis_result = None
+
+    st.session_state.last_video_hash = current_video_hash
 
 if video:
     st.video(video)
