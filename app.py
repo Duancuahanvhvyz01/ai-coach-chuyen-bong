@@ -591,7 +591,7 @@ def analyze(path):
                                     or track["missing_landmarks"][end] <= 5
                                 )
                             ):
-                            x1 = int(smooth_landmarks[start][0] * width)
+                                x1 = int(smooth_landmarks[start][0] * width)
                                 y1 = int(smooth_landmarks[start][1] * height)
                                 x2 = int(smooth_landmarks[end][0] * width)
                                 y2 = int(smooth_landmarks[end][1] * height)
