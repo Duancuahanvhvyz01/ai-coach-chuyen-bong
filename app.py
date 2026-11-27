@@ -71,7 +71,120 @@ def detect_body_direction(points, width, height):
         return "Gần nghiêng ngang"
     else:
         return "Góc chéo"
+# ==============================
+# PHÂN TÍCH TƯ THẾ CHUẨN BỊ
+# TIÊU CHÍ 1 CỦA GIÁO VIÊN
+# ==============================
 
+def analyze_ready_posture(points, width, height):
+
+    # Lấy các điểm khung xương cần thiết
+    left_shoulder = points[11]
+    right_shoulder = points[12]
+
+    left_hip = points[23]
+    right_hip = points[24]
+
+    left_knee = points[25]
+    right_knee = points[26]
+
+    left_ankle = points[27]
+    right_ankle = points[28]
+
+    required_points = [
+        left_shoulder, right_shoulder,
+        left_hip, right_hip,
+        left_knee, right_knee,
+        left_ankle, right_ankle
+    ]
+
+    # Kiểm tra độ rõ của khung xương
+    if min(p.visibility for p in required_points) < 0.5:
+        return {
+            "trang_thai": "Chưa đủ dữ liệu"
+        }
+
+    # Chuyển tọa độ chuẩn hóa sang pixel
+    def pixel(point):
+        return (
+            point.x * width,
+            point.y * height
+        )
+
+    # Tính góc tại một khớp
+    def calculate_angle(a, b, c):
+        a = np.array(pixel(a))
+        b = np.array(pixel(b))
+        c = np.array(pixel(c))
+
+        ba = a - b
+        bc = c - b
+
+        denominator = (
+            np.linalg.norm(ba) *
+            np.linalg.norm(bc)
+        )
+
+        if denominator == 0:
+            return None
+
+        cosine = np.dot(ba, bc) / denominator
+        cosine = np.clip(cosine, -1.0, 1.0)
+
+        return round(
+            float(np.degrees(np.arccos(cosine))), 1
+        )
+
+    # Độ rộng hai chân so với hai vai
+    shoulder_width = abs(
+        left_shoulder.x - right_shoulder.x
+    ) * width
+
+    ankle_width = abs(
+        left_ankle.x - right_ankle.x
+    ) * width
+
+    if shoulder_width > 1:
+        stance_ratio = round(
+            ankle_width / shoulder_width, 2
+        )
+    else:
+        stance_ratio = None
+
+    # Góc gập hai đầu gối
+    left_knee_angle = calculate_angle(
+        left_hip, left_knee, left_ankle
+    )
+
+    right_knee_angle = calculate_angle(
+        right_hip, right_knee, right_ankle
+    )
+
+    # Độ nghiêng thân người trong hình ảnh
+    shoulder_center = np.array([
+        (left_shoulder.x + right_shoulder.x) / 2 * width,
+        (left_shoulder.y + right_shoulder.y) / 2 * height
+    ])
+
+    hip_center = np.array([
+        (left_hip.x + right_hip.x) / 2 * width,
+        (left_hip.y + right_hip.y) / 2 * height
+    ])
+
+    dx = abs(hip_center[0] - shoulder_center[0])
+    dy = abs(hip_center[1] - shoulder_center[1])
+
+    torso_lean = round(
+        float(np.degrees(np.arctan2(dx, dy))), 1
+    )
+
+    return {
+        "trang_thai": "Đủ dữ liệu đo",
+        "do_rong_chan_so_voi_vai": stance_ratio,
+        "goc_goi_trai": left_knee_angle,
+        "goc_goi_phai": right_knee_angle,
+        "do_nghieng_than_trong_hinh": torso_lean
+    }
 def analyze(path):
     get_model()
 
@@ -379,16 +492,22 @@ def analyze(path):
                                 "visibility": float(point.visibility)
                             })
 
+                         # Phân tích tư thế chuẩn bị theo từng ID
+                        ready_posture = analyze_ready_posture(
+                            person["points"], width, height
+                        )
+
                         pose_data.append({
                             "frame": int(frame_no),
                             "timestamp": round(frame_no / fps, 3),
                             "id": int(track_id),
                             "direction": detect_body_direction(
                                 person["points"], width, height
-                            ),                            
+                            ),
+                            "ready_posture": ready_posture,
                             "landmarks": landmarks
-                        })
-                    # Vẽ các điểm cơ thể và ID
+                        })                 
+                        # Vẽ các điểm cơ thể và ID
                     labels = []
 
                     for person_idx, person in enumerate(people):
