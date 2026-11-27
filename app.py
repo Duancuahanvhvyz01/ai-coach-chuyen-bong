@@ -661,7 +661,9 @@ st.divider()
 
 # Khu vực tải video
 st.header("🎥 Video đầu vào")
-
+# Lưu kết quả phân tích trong phiên làm việc
+if "analysis_result" not in st.session_state:
+    st.session_state.analysis_result = None
 video = st.file_uploader(
     "Tải video cần phân tích lên",
     type=["mp4", "mov", "avi", "m4v"]
@@ -674,6 +676,7 @@ if video:
         temp = None
         normalized = None
         result_file = None
+
         try:
             suffix = Path(video.name).suffix or ".mp4"
 
@@ -707,82 +710,22 @@ if video:
 
             with st.spinner("Đang nhận diện và phân tích video..."):
                 result_file, preview, total, detected, player_ids, pose_data = analyze(normalized)
-            st.success("Đã xử lý video thành công!")
-            # Lưu dữ liệu khung xương
-            json_data = json.dumps(
-                pose_data,
-                ensure_ascii=False,
-                indent=2
-            )
 
-            st.download_button(
-                "📥 Tải dữ liệu khung xương (JSON)",
-                data=json_data,
-                file_name="du_lieu_khung_xuong.json",
-                mime="application/json"
-            )
-            # Thông tin tổng quan
-            st.header("📊 Kết quả tổng quan")
-
-            col1, col2 = st.columns(2)
-
-            with col1:
-                st.metric("Tổng số khung hình", total)
-
-            with col2:
-                st.metric("Khung hình nhận diện được", detected)
-
-            # Hình ảnh phân tích
-            if preview is not None:
-                st.subheader("🖼️ Hình ảnh nhận diện")
-                st.image(
-                    preview,
-                    caption="Khung hình phân tích cuối cùng"
-                )
-
-            # Video kết quả
-            st.subheader("🎬 Video sau phân tích")
-            st.video(result_file)
-
+            # Đọc video kết quả thành dữ liệu trong bộ nhớ
             with open(result_file, "rb") as f:
-                st.download_button(
-                    "⬇️ Tải video kết quả",
-                    f.read(),
-                    file_name="ket_qua.mp4",
-                    mime="video/mp4",
-                    use_container_width=True
-                )
+                result_video = f.read()
 
-            # Khu vực kết quả từng người
-            st.divider()
-            st.header("👥 Kết quả theo từng người")
+            # Lưu toàn bộ kết quả vào session_state
+            st.session_state.analysis_result = {
+                "preview": preview,
+                "total": total,
+                "detected": detected,
+                "player_ids": player_ids,
+                "pose_data": pose_data,
+                "result_video": result_video
+            }
 
-            if player_ids:
-                st.write(f"Tổng số người chơi đã nhận diện: {len(player_ids)}")
-
-                cols = st.columns(len(player_ids))
-
-                for col, track_id in zip(cols, player_ids):
-                    with col:
-                        st.metric(
-                            f"Người chơi ID {track_id}",
-                            "Đã nhận diện"
-                        )
-            else:
-                st.warning("Chưa nhận diện được người chơi nào.")
-            # Khu vực đánh giá kỹ thuật
-            st.header("📝 Đánh giá kỹ thuật")
-
-            st.info(
-                "Các chỉ số và tiêu chuẩn đánh giá sẽ được "
-                "bổ sung sau khi có dữ liệu từ giáo viên."
-            )
-
-            if detected == 0:
-                st.warning(
-                    "Không nhận diện được cơ thể. "
-                    "Hãy kiểm tra ánh sáng và góc quay."
-                )
+            st.success("Đã xử lý video thành công!")
 
         except Exception as e:
             st.error("Phân tích thất bại:")
@@ -792,3 +735,91 @@ if video:
             for file_path in (temp, normalized):
                 if file_path and os.path.exists(file_path):
                     os.remove(file_path)
+
+    # Hiển thị kết quả đã lưu
+    if st.session_state.analysis_result is not None:
+
+        result = st.session_state.analysis_result
+
+        json_data = json.dumps(
+            result["pose_data"],
+            ensure_ascii=False,
+            indent=2
+        )
+
+        st.download_button(
+            "📥 Tải dữ liệu khung xương (JSON)",
+            data=json_data,
+            file_name="du_lieu_khung_xuong.json",
+            mime="application/json"
+        )
+
+        # Thông tin tổng quan
+        st.header("📊 Kết quả tổng quan")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.metric("Tổng số khung hình", result["total"])
+
+        with col2:
+            st.metric(
+                "Khung hình nhận diện được",
+                result["detected"]
+            )
+
+        # Hình ảnh phân tích
+        if result["preview"] is not None:
+            st.subheader("🖼️ Hình ảnh nhận diện")
+            st.image(
+                result["preview"],
+                caption="Khung hình phân tích cuối cùng"
+            )
+
+        # Video kết quả
+        st.subheader("🎬 Video sau phân tích")
+        st.video(result["result_video"])
+
+        st.download_button(
+            "⬇️ Tải video kết quả",
+            data=result["result_video"],
+            file_name="ket_qua.mp4",
+            mime="video/mp4",
+            use_container_width=True
+        )
+
+        # Khu vực kết quả từng người
+        st.divider()
+        st.header("👥 Kết quả theo từng người")
+
+        player_ids = result["player_ids"]
+
+        if player_ids:
+            st.write(
+                f"Tổng số người chơi đã nhận diện: {len(player_ids)}"
+            )
+
+            cols = st.columns(len(player_ids))
+
+            for col, track_id in zip(cols, player_ids):
+                with col:
+                    st.metric(
+                        f"Người chơi ID {track_id}",
+                        "Đã nhận diện"
+                    )
+        else:
+            st.warning("Chưa nhận diện được người chơi nào.")
+
+        # Khu vực đánh giá kỹ thuật
+        st.header("📝 Đánh giá kỹ thuật")
+
+        st.info(
+            "Các chỉ số và tiêu chuẩn đánh giá sẽ được "
+            "bổ sung sau khi có dữ liệu từ giáo viên."
+        )
+
+        if result["detected"] == 0:
+            st.warning(
+                "Không nhận diện được cơ thể. "
+                "Hãy kiểm tra ánh sáng và góc quay."
+            )
