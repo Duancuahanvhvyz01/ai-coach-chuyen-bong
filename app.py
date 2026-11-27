@@ -493,7 +493,7 @@ def analyze(path):
                             })
 
                          # Phân tích tư thế chuẩn bị theo từng ID
-                        ready_posture = analyze_ready_posture(
+                         ready_posture = analyze_ready_posture(
                             person["points"], width, height
                         )
 
