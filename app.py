@@ -581,10 +581,17 @@ def analyze(path):
                         # Vẽ đường nối các khớp
                         for start, end in connections:
                             if (
-                                points[start].visibility > 0.5
-                                and points[end].visibility > 0.5
+                                (
+                                    points[start].visibility > 0.5
+                                    or track["missing_landmarks"][start] <= 5
+                                )
+                                and
+                                (
+                                    points[end].visibility > 0.5
+                                    or track["missing_landmarks"][end] <= 5
+                                )
                             ):
-                                x1 = int(smooth_landmarks[start][0] * width)
+                            x1 = int(smooth_landmarks[start][0] * width)
                                 y1 = int(smooth_landmarks[start][1] * height)
                                 x2 = int(smooth_landmarks[end][0] * width)
                                 y2 = int(smooth_landmarks[end][1] * height)
@@ -599,7 +606,10 @@ def analyze(path):
 
                         # Vẽ các chấm xanh tại khớp
                         for i, p in enumerate(points):
-                            if p.visibility > 0.5:
+                            if (
+                                p.visibility > 0.5
+                                or track["missing_landmarks"][i] <= 5
+                            ):
                                 x = int(smooth_landmarks[i][0] * width)
                                 y = int(smooth_landmarks[i][1] * height)
 
