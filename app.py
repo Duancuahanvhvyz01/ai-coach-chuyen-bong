@@ -536,6 +536,8 @@ def analyze(path):
                                 (p.x, p.y) for p in points
                             ]
 
+                        if "missing_landmarks" not in track:
+                            track["missing_landmarks"] = [0] * len(points)
                         smooth_landmarks = []
 
                         # Hệ số làm mượt
@@ -544,11 +546,21 @@ def analyze(path):
                         for i, p in enumerate(points):
                             old_x, old_y = track["smooth_landmarks"][i]
 
-                            new_x = old_x * (1 - smooth) + p.x * smooth
-                            new_y = old_y * (1 - smooth) + p.y * smooth
+                            if p.visibility > 0.5:
+                                new_x = old_x * (1 - smooth) + p.x * smooth
+                                new_y = old_y * (1 - smooth) + p.y * smooth
+
+                                track["missing_landmarks"][i] = 0
+
+                            else:
+                                track["missing_landmarks"][i] += 1
+
+                                new_x, new_y = old_x, old_y
+
+                                if track["missing_landmarks"][i] > 5:
+                                    new_x, new_y = p.x, p.y
 
                             smooth_landmarks.append((new_x, new_y))
-
                         track["smooth_landmarks"] = smooth_landmarks
 
                         # Các cặp điểm cần nối thành khung xương
