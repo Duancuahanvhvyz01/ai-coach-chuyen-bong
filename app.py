@@ -7,6 +7,7 @@ import tempfile
 import os
 import subprocess
 import urllib.request
+import hashlib
 from pathlib import Path
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
@@ -664,10 +665,21 @@ st.header("🎥 Video đầu vào")
 # Lưu kết quả phân tích trong phiên làm việc
 if "analysis_result" not in st.session_state:
     st.session_state.analysis_result = None
+
+if "last_video_hash" not in st.session_state:
+    st.session_state.last_video_hash = None
+
 video = st.file_uploader(
     "Tải video cần phân tích lên",
     type=["mp4", "mov", "avi", "m4v"]
 )
+
+# Kiểm tra video mới
+if video is not None:
+    current_video_hash = hashlib.sha256(
+        video.getvalue()
+    ).hexdigest()
+
 
 if video:
     st.video(video)
