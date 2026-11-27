@@ -518,11 +518,38 @@ def analyze(path):
                             "landmarks": landmarks,
                             "world_landmarks": world_landmarks
                         })                 
-                        # Vẽ các điểm cơ thể và ID
+                                        # Vẽ các điểm cơ thể và ID
                     labels = []
 
                     for person_idx, person in enumerate(people):
                         points = person["points"]
+
+                        if person_idx not in assigned:
+                            continue
+
+                        track_id = assigned[person_idx]
+                        track = tracks[track_id]
+
+                        # Khởi tạo dữ liệu làm mượt riêng cho từng ID
+                        if "smooth_landmarks" not in track:
+                            track["smooth_landmarks"] = [
+                                (p.x, p.y) for p in points
+                            ]
+
+                        smooth_landmarks = []
+
+                        # Hệ số làm mượt
+                        smooth = 0.35
+
+                        for i, p in enumerate(points):
+                            old_x, old_y = track["smooth_landmarks"][i]
+
+                            new_x = old_x * (1 - smooth) + p.x * smooth
+                            new_y = old_y * (1 - smooth) + p.y * smooth
+
+                            smooth_landmarks.append((new_x, new_y))
+
+                        track["smooth_landmarks"] = smooth_landmarks
 
                         # Các cặp điểm cần nối thành khung xương
                         connections = [
@@ -545,10 +572,10 @@ def analyze(path):
                                 points[start].visibility > 0.5
                                 and points[end].visibility > 0.5
                             ):
-                                x1 = int(points[start].x * width)
-                                y1 = int(points[start].y * height)
-                                x2 = int(points[end].x * width)
-                                y2 = int(points[end].y * height)
+                                x1 = int(smooth_landmarks[start][0] * width)
+                                y1 = int(smooth_landmarks[start][1] * height)
+                                x2 = int(smooth_landmarks[end][0] * width)
+                                y2 = int(smooth_landmarks[end][1] * height)
 
                                 cv2.line(
                                     frame,
@@ -559,10 +586,10 @@ def analyze(path):
                                 )
 
                         # Vẽ các chấm xanh tại khớp
-                        for p in points:
+                        for i, p in enumerate(points):
                             if p.visibility > 0.5:
-                                x = int(p.x * width)
-                                y = int(p.y * height)
+                                x = int(smooth_landmarks[i][0] * width)
+                                y = int(smooth_landmarks[i][1] * height)
 
                                 cv2.circle(
                                     frame, (x, y), 4,
