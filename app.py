@@ -29,13 +29,12 @@ def get_model():
 # NHẬN DIỆN HƯỚNG CƠ THỂ
 # ==============================
 
-def detect_body_direction(points):
-    # Lấy độ rõ của hai vai và hai hông
+def detect_body_direction(points, width, height):
     left_shoulder = points[11]
     right_shoulder = points[12]
     left_hip = points[23]
     right_hip = points[24]
-    # Kiểm tra độ rõ của các điểm
+
     if min(
         left_shoulder.visibility,
         right_shoulder.visibility,
@@ -44,17 +43,11 @@ def detect_body_direction(points):
     ) < 0.5:
         return "Không xác định"
 
-    # Tính khoảng cách giữa hai vai
+    # Tính khoảng cách theo pixel thực tế
     shoulder_width = abs(
         left_shoulder.x - right_shoulder.x
-    )
+    ) * width
 
-    # Tính khoảng cách giữa hai hông
-    hip_width = abs(
-        left_hip.x - right_hip.x
-    )
-
-    # Tính chiều dài thân người
     shoulder_y = (
         left_shoulder.y + right_shoulder.y
     ) / 2
@@ -63,9 +56,11 @@ def detect_body_direction(points):
         left_hip.y + right_hip.y
     ) / 2
 
-    torso_length = abs(hip_y - shoulder_y)
+    torso_length = abs(
+        hip_y - shoulder_y
+    ) * height
 
-    if torso_length < 0.01:
+    if torso_length < 1:
         return "Không xác định"
 
     ratio = shoulder_width / torso_length
@@ -76,7 +71,6 @@ def detect_body_direction(points):
         return "Gần nghiêng ngang"
     else:
         return "Góc chéo"
-
 
 def analyze(path):
     get_model()
@@ -389,7 +383,9 @@ def analyze(path):
                             "frame": int(frame_no),
                             "timestamp": round(frame_no / fps, 3),
                             "id": int(track_id),
-                            "direction": detect_body_direction(person["points"]),
+                            "direction": detect_body_direction(
+                                person["points"], width, height
+                            ),                            
                             "landmarks": landmarks
                         })
                     # Vẽ các điểm cơ thể và ID
@@ -428,8 +424,9 @@ def analyze(path):
                             center_x = int(track["display_center"][0] * width)
                             center_y = int(track["display_center"][1] * height)
 
-                            direction = detect_body_direction(points)
-
+                            direction = detect_body_direction(
+                                points, width, height
+                            )                           
                             print("HUONG CO THE:", track_id, direction)
 
                             labels.append(
