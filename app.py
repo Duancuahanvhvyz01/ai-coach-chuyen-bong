@@ -524,6 +524,41 @@ def analyze(path):
                     for person_idx, person in enumerate(people):
                         points = person["points"]
 
+                        # Các cặp điểm cần nối thành khung xương
+                        connections = [
+                            (11, 12),
+                            (11, 13), (13, 15),
+                            (12, 14), (14, 16),
+                            (11, 23), (12, 24),
+                            (23, 24),
+                            (23, 25), (25, 27),
+                            (24, 26), (26, 28),
+                            (27, 29), (29, 31),
+                            (28, 30), (30, 32),
+                            (15, 17), (15, 19),
+                            (16, 18), (16, 20)
+                        ]
+
+                        # Vẽ đường nối các khớp
+                        for start, end in connections:
+                            if (
+                                points[start].visibility > 0.5
+                                and points[end].visibility > 0.5
+                            ):
+                                x1 = int(points[start].x * width)
+                                y1 = int(points[start].y * height)
+                                x2 = int(points[end].x * width)
+                                y2 = int(points[end].y * height)
+
+                                cv2.line(
+                                    frame,
+                                    (x1, y1),
+                                    (x2, y2),
+                                    (0, 255, 0),
+                                    2
+                                )
+
+                        # Vẽ các chấm xanh tại khớp
                         for p in points:
                             if p.visibility > 0.5:
                                 x = int(p.x * width)
@@ -533,7 +568,6 @@ def analyze(path):
                                     frame, (x, y), 4,
                                     (0, 255, 0), -1
                                 )
-
                         if person_idx in assigned:
                             track_id = assigned[person_idx]
                             track = tracks[track_id]
